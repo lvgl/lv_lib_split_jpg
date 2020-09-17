@@ -3,14 +3,22 @@
 # Dependencies: (PYTHON-3)
 ##################################################################
 SJPG_FILE_FORMAT_VERSION = "V1.00"  #
-JPEG_SPLIT_HEIGHT   = 16
-OUTPUT_FILE_NAME    = "wallpaper"  #Both .c and .sjpg will be generated.
-INPUT_FILE          = "C:/Users/<yourself>/Pictures/wallpaper.jpg"
-DEBUG = 0
+JPEG_SPLIT_HEIGHT   = 16 
 ##################################################################
-
 import math, os, sys, time
 from PIL import Image
+
+
+OUTPUT_FILE_NAME = ""
+INPUT_FILE       = ""
+
+
+if len(sys.argv) == 2:
+    INPUT_FILE = sys.argv[1]
+    OUTPUT_FILE_NAME = INPUT_FILE.split(".")[0]
+else:
+    print("usage:\n\t python " + sys.argv[0] + " input_file.jpg")
+    sys.exit(0)
 
 try:
     im = Image.open(INPUT_FILE)
@@ -81,8 +89,6 @@ header = header + int(JPEG_SPLIT_HEIGHT).to_bytes(2, byteorder='little');
 for item_len in lenbuf:
     # WIDTH 2 BYTES
     header = header + item_len.to_bytes(2, byteorder='little');
-    if DEBUG:
-        print("item len = " + str(item_len))
 
 
 data = bytearray()
