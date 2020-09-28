@@ -1,7 +1,7 @@
-# LV SJPG DECODER 
-- (first commit)
+# SJPG Ddecoder for LVGL
 
 # Overview:
+  - SJPG is a custom format based on "normal" JPG
   - SJPG is 'split-jpeg' which is a bundle of small jpeg fragments with an sjpg header.
   - SJPG size will be almost comparable to the jpg file or might be a slightly larger.
   - lv_sjpg can open and handle multiple files at same time.
