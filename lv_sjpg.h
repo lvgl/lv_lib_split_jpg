@@ -6,13 +6,13 @@
 /    It will contain multiple JPEG fragments all embedded into a single file with a custom header.
 /    This makes JPEG decoding easier using any JPEG library. Overall file size will be almost
 /    similar to the parent jpeg file. We can generate sjpeg from any jpeg using a python script
-/    provided along with this project.			
+/    provided along with this project.
 /                                                                                     (by vinodstanur | 2020 )
 /    SJPEG FILE STRUCTURE
 /    --------------------------------------------------------------------------------------------------------------------------------
 /    Bytes                       |   Value                                                                                           |
 /    --------------------------------------------------------------------------------------------------------------------------------
-/                                                                                                                                    
+/
 /    0 - 7                       |   "_SJPG__" followed by '\0'
 /
 /    8 - 13                      |   "V1.00" followed by '\0'       [VERSION OF SJPG FILE for future compatibiliby]
@@ -44,6 +44,11 @@ extern "C" {
 
 #include "stdint.h"
 #include <stdio.h>
+#include "lvgl.h"
+#include "tjpgd.h"
+
+#define TJPGD_WORKBUFF_SIZE             4096
+
 
 #define SJPEG_VERSION_OFFSET            8
 #define SJPEG_X_RES_OFFSET              14
@@ -59,7 +64,7 @@ typedef enum {
 
 typedef struct {
     io_source_type type;
-    FILE *file;
+    lv_fs_file_t lv_file;
     uint8_t* img_cache_buff;
     int img_cache_x_res;
     int img_cache_y_res;
@@ -86,7 +91,7 @@ typedef struct {
 
 
 
-
+void lv_split_jpeg_init(void);
 
 
 

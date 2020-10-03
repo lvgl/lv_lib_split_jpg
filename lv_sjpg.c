@@ -3,13 +3,13 @@
 /    It will contain multiple JPEG fragments all embedded into a single file with a custom header.
 /    This makes JPEG decoding easier using any JPEG library. Overall file size will be almost
 /    similar to the parent jpeg file. We can generate sjpeg from any jpeg using a python script
-/    provided along with this project.			
+/    provided along with this project.
 /                                                                                     (by vinodstanur | 2020 )
 /    SJPEG FILE STRUCTURE
 /    --------------------------------------------------------------------------------------------------------------------------------
 /    Bytes                       |   Value                                                                                           |
 /    --------------------------------------------------------------------------------------------------------------------------------
-/                                                                                                                                    
+/
 /    0 - 7                       |   "_SJPG__" followed by '\0'
 /
 /    8 - 13                      |   "V1.00" followed by '\0'       [VERSION OF SJPG FILE for future compatibiliby]
@@ -45,7 +45,7 @@
 
 
 uint8_t* workb;
-const size_t sz_work = 4096;	/* Size of working buffer for TJpgDec module */
+const size_t sz_work = TJPGD_WORKBUFF_SIZE;	/* Size of working buffer for TJpgDec module */
 
 
 static lv_res_t decoder_info(lv_img_decoder_t * decoder, const void * src, lv_img_header_t * header);
@@ -54,7 +54,7 @@ static lv_res_t decoder_read_line(lv_img_decoder_t * decoder, lv_img_decoder_dsc
 static void decoder_close(lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc);
 
 
-void lv_jpeg_init(void)
+void lv_split_jpeg_init(void)
 {
     workb = malloc(sz_work);
     /*Create a new decoder and register functions */
@@ -108,19 +108,28 @@ static lv_res_t decoder_info(lv_img_decoder_t * decoder, const void * src, lv_im
 
             uint8_t buff[22];
             memset(buff, 0, sizeof(buff));
-            FILE *file;
-            file = fopen(fn, "rb" );
-            if(!file) return LV_RES_INV;
-            int rn = fread(buff, 1, 8, file);
-            if( rn != 8) {
-                    fclose(file);
-                    return LV_RES_INV;
+
+            #if 1//LV_USE_FS_IF
+
+            lv_fs_file_t file;
+            lv_fs_res_t res = lv_fs_open(&file , fn, LV_FS_MODE_RD);
+            if(res != LV_FS_RES_OK) return 78;
+
+            uint32_t rn;
+            res = lv_fs_read(&file, buff, 8, &rn);
+            if(res != LV_FS_RES_OK || rn != 8) {
+                lv_fs_close(&file);
+                return LV_RES_INV;
             }
+
             if(strcmp((char *)buff, "_SJPG__") == 0 ) {
-                fseek(file, 14, SEEK_SET); //seek to res info ... refer sjpeg format
-                int rn = fread(buff, 1, 4, file);
-                if( rn != 4) {
-                    fclose(file);
+                lv_fs_seek(&file, 14);
+                //fseek(file, 14, SEEK_SET); //seek to res info ... refer sjpeg format
+//                int rn = fread(buff, 1, 4, file);
+
+                res = lv_fs_read(&file, buff, 4, &rn);
+                if(res != LV_FS_RES_OK || rn != 4 ) {
+                    lv_fs_close(&file);
                     return LV_RES_INV;
                 }
                 header->always_zero = 0;
@@ -129,14 +138,15 @@ static lv_res_t decoder_info(lv_img_decoder_t * decoder, const void * src, lv_im
                 header->w |= *raw_sjpeg_data++ << 8;
                 header->h = *raw_sjpeg_data++;
                 header->h |= *raw_sjpeg_data++ << 8;
-                fclose(file);
+                lv_fs_close(&file);
                 return LV_RES_OK;
-            }
+            #endif
         }
+    }
   }
-
   return LV_RES_INV;
- }
+}
+
 
 
 static int img_data_cb(JDEC* jd, void* data, JRECT* rect)
@@ -171,15 +181,23 @@ static unsigned int input_func (JDEC* jd, uint8_t* buff, unsigned int ndata)
         return ndata;
     }
 
-   else if(io->type == SJPEG_IO_SOURCE_DISK) {
-    FILE *file = io->file;
-    if( buff ) {
-        int rn =  fread( buff, 1, ndata, file );
-        return rn;
-    } else {
-        fseek(file, ndata, SEEK_CUR);
-        return ndata;
-    }
+    else if(io->type == SJPEG_IO_SOURCE_DISK) {
+
+        //FILE *file = io->file;
+        lv_fs_file_t* lv_file_p = &(io->lv_file);
+
+        if( buff ) {
+           // int rn =  fread( buff, 1, ndata, file );
+           //return rn;
+            uint32_t rn = 0;
+            lv_fs_read(lv_file_p, buff, ndata, &rn);
+            return rn;
+        } else {
+            uint32_t pos;
+            lv_fs_tell(lv_file_p, &pos);
+            lv_fs_seek(lv_file_p, ndata + pos);
+            return ndata;
+        }
     }
 
     return 0;
@@ -193,7 +211,7 @@ static unsigned int input_func (JDEC* jd, uint8_t* buff, unsigned int ndata)
  * @return LV_RES_OK: no error; LV_RES_INV: can't get the info
  */
  //SJPEG sjp;
- static lv_res_t decoder_open(lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc)
+static lv_res_t decoder_open(lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc)
 {
     if(dsc->src_type == LV_IMG_SRC_VARIABLE) {
         uint8_t *data;
@@ -235,12 +253,10 @@ static unsigned int input_func (JDEC* jd, uint8_t* buff, unsigned int ndata)
         sjpeg->io.img_cache_x_res = sjpeg->sjpeg_x_res;
         sjpeg->tjpeg_jd =   malloc( sizeof( JDEC ) );
         sjpeg->io.type = SJPEG_IO_SOURCE_C_ARRAY;
-        sjpeg->io.file = NULL;
+        sjpeg->io.lv_file.file_d = NULL;
         dsc->img_data = NULL;
         return LV_RES_OK;
-
     }
-
 
     else if(dsc->src_type == LV_IMG_SRC_FILE) {
         /* If all fine, then the file will be kept open */
@@ -251,14 +267,22 @@ static unsigned int input_func (JDEC* jd, uint8_t* buff, unsigned int ndata)
 
             uint8_t buff[22];
             memset(buff, 0, sizeof(buff));
-            FILE *file;
-            file = fopen(fn, "rb" );
-            if(!file) return LV_RES_INV;
-            int rn = fread( buff, 1, 22, file );
-            if( rn != 22) {
-                    fclose(file);
-                    return LV_RES_INV;
+
+
+            lv_fs_file_t lv_file;
+            lv_fs_res_t res = lv_fs_open(&lv_file , fn, LV_FS_MODE_RD);
+            if(res != LV_FS_RES_OK) {
+                return 78;
             }
+
+
+            uint32_t rn;
+            res = lv_fs_read(&lv_file, buff, 22, &rn);
+            if(res != LV_FS_RES_OK || rn != 22 ) {
+                lv_fs_close(&lv_file);
+                return LV_RES_INV;
+            }
+
             if(strcmp((char *)buff, "_SJPG__") == 0 ) {
 
                 SJPEG* sjpeg = ( SJPEG* ) dsc->user_data;
@@ -289,16 +313,17 @@ static unsigned int input_func (JDEC* jd, uint8_t* buff, unsigned int ndata)
                 sjpeg->frame_base_offset[0] = img_frame_start_offset; //pointer used to save integer for now...
 
                 for( int i = 1; i <  sjpeg->sjpeg_total_frames; i++ ) {
-                    int rn = fread(buff, 1, 2, file);
-                    if(rn != 2) {
-                        fclose(file);
+                    uint32_t rn;
+                    res = lv_fs_read(&lv_file, buff, 2, &rn);
+                        if(res != LV_FS_RES_OK || rn != 2 ) {
+                        lv_fs_close(&lv_file);
                         return LV_RES_INV;
                     }
+
                     data = buff;
-                     int offset = *data++;
-                     offset |= *data++ <<8;
-                     //printf("offset = %d\n", offset);
-                     sjpeg->frame_base_offset[i] = sjpeg->frame_base_offset[i-1] + offset;
+                    int offset = *data++;
+                    offset |= *data++ <<8;
+                    sjpeg->frame_base_offset[i] = sjpeg->frame_base_offset[i-1] + offset;
                 }
 
                 sjpeg->sjpeg_cache_frame_index = -1; //INVALID AT BEGINNING for a forced compare mismatch at first time.
@@ -307,7 +332,7 @@ static unsigned int input_func (JDEC* jd, uint8_t* buff, unsigned int ndata)
                 sjpeg->io.img_cache_x_res = sjpeg->sjpeg_x_res;
                 sjpeg->tjpeg_jd =    malloc( sizeof( JDEC ) );
                 sjpeg->io.type = SJPEG_IO_SOURCE_DISK;
-                sjpeg->io.file = file;
+                memcpy(&(sjpeg->io.lv_file), &lv_file, sizeof(lv_file));
                 dsc->img_data = NULL;
                 return LV_RES_OK;
             }
@@ -365,13 +390,26 @@ static lv_res_t decoder_read_line(lv_img_decoder_t * decoder, lv_img_decoder_dsc
         JRESULT rc;
         int sjpeg_req_frame_index = y / sjpeg->sjpeg_single_frame_height;
 
-        FILE *file = (FILE *)sjpeg->io.file;
-        if(!file) goto end;
+//      FILE *file = (FILE *)sjpeg->io.file;
+//      if(!file) goto end;
+
+        lv_fs_file_t* lv_file_p = &(sjpeg->io.lv_file);
+        if(!lv_file_p) goto end;
+
+   /*     int rn;
+        res = lv_fs_read(lv_file_p, buff, 22, &rn);
+        if(res != LV_FS_RES_OK || rn != 8 ) {
+            lv_fs_close(lv_file_p);
+            return LV_RES_INV;
+        }
+*/
+
 
         /*If line not from cache, refresh cache */
         if(sjpeg_req_frame_index != sjpeg->sjpeg_cache_frame_index) {
             sjpeg->io.file_seek_offset = (int)(sjpeg->frame_base_offset [ sjpeg_req_frame_index ]);
-            fseek(sjpeg->io.file,  sjpeg->io.file_seek_offset , SEEK_SET);
+            //fseek(sjpeg->io.file,  sjpeg->io.file_seek_offset , SEEK_SET);
+            lv_fs_seek( &(sjpeg->io.lv_file), sjpeg->io.file_seek_offset );
             rc = jd_prepare( sjpeg->tjpeg_jd, input_func, workb, (unsigned int)sz_work, &(sjpeg->io));
             if(rc != JDR_OK ) return LV_RES_INV;
             rc = jd_decomp ( sjpeg->tjpeg_jd, img_data_cb, 0);
@@ -407,8 +445,8 @@ static void decoder_close(lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc
     switch(dsc->src_type) {
 
         case LV_IMG_SRC_FILE:
-            if(sjpeg->io.file) {
-                fclose(sjpeg->io.file);
+            if(sjpeg->io.lv_file.file_d) {
+                lv_fs_close(&(sjpeg->io.lv_file));
             }
 			//no break
 
