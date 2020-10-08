@@ -1,4 +1,4 @@
-# LV SJPG DECODER 
+# LV JPG / SJPG DECODER 
 - (second commit)
 
 # Overview:
