@@ -1,3 +1,5 @@
+#if LV_SJPG_DEMO_IMAGE_ENABLE
+
 //LVGL SJPG C ARRAY
 #include "lvgl/lvgl.h"
 
@@ -1136,3 +1138,4 @@ lv_img_dsc_t small_image = {
 	.data = small_image_map,
 };
 
+#endif
