@@ -1,9 +1,8 @@
 # LV JPG / SJPG DECODER 
-- (second commit)
 
 # Overview:
-  - lv_sjpg supports both normal jpg and sjpg.
-  - Normal jpg will consume a full image cache buffer (recommended only for devices with more RAM)
+  - lv_lib_splitjpg supports both normal jpg and the custom sjpg formats.
+  - Decoding normal jpg consumes RAM with the site fo the whole uncompressed image (recommended only for devices with more RAM)
   - sjpg is a custom format based on "normal" JPG and specially made for lvgl.
   - sjpg is 'split-jpeg' which is a bundle of small jpeg fragments with an sjpg header.
   - sjpg size will be almost comparable to the jpg file or might be a slightly larger.
