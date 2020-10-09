@@ -468,7 +468,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
     }
 
-    #if  1//LV_USE_FS_IF
+    #if  LV_USE_FS_IF
 
     else if(dsc->src_type == LV_IMG_SRC_FILE) {
         /* If all fine, then the file will be kept open */
