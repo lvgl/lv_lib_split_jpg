@@ -1,7 +1,7 @@
 # LV JPG / SJPG DECODER 
 
 # Overview:
-  - lv_lib_splitjpg supports both normal jpg and the custom sjpg formats.
+  - lv_lib_split_jpg supports both normal jpg and the custom sjpg formats.
   - Decoding normal jpg consumes RAM with the site fo the whole uncompressed image (recommended only for devices with more RAM)
   - sjpg is a custom format based on "normal" JPG and specially made for lvgl.
   - sjpg is 'split-jpeg' which is a bundle of small jpeg fragments with an sjpg header.
@@ -30,26 +30,30 @@
     using it in devices like raspberry pi etc.
   
   -------*/
-   
-   LV_IMG_DECLARE(wallpaper);
-   LV_IMG_DECLARE(small_image);
-   LV_IMG_DECLARE(wallpaper_jpg);
 
-   //for PC simulator
-   lv_fs_if_pc_init();
-    
-   lv_obj_t * img1;
-   lv_obj_t * img2;
+#include <lvgl/lvgl.h>
+#include "../lv_sjpg.h"
 
-   lv_split_jpeg_init();
-   img1 = lv_img_create(lv_scr_act(), NULL);
-   img2 = lv_img_create(lv_scr_act(), NULL);
-   
-   lv_img_set_src(img1,  &wallpaper_jpg);         //jpg image 1 from c array inside sample_sjpg_images
-   //lv_img_set_src(img1,  &wallpaper);            //sjpg image 1 from c array inside sample_sjpg_images
-   
-   lv_img_set_src(img2,  "S.\\lv_examples\\assets\\lv_lib_split_jpg\\sample_sjpg_images\\small_image.sjpg"); //sjpg file from file system ( using lv_fs )
-   //lv_img_set_src(img2,  "S:.\\lv_examples\\assets\\lv_lib_split_jpg\\sample_sjpg_images\\small_image.jpg"); //jpg file from file system ( using lv_fs )
+LV_IMG_DECLARE( small_image_sjpg );
+LV_IMG_DECLARE( wallpaper_jpg );
+
+void demo_jpg_sjpg( void )
+{
+  lv_fs_if_pc_init();
+  lv_obj_t * img1;
+  lv_obj_t * img2;
+
+  lv_split_jpeg_init();
+  img1 = lv_img_create( lv_scr_act(), NULL );
+  img2 = lv_img_create( lv_scr_act(), NULL );
+
+  //jpg from c array
+  lv_img_set_src( img1,  &wallpaper_jpg );      
+
+  //sjpg from file (lv_fs)
+  lv_img_set_src( img2,  "S.\\lv_lib_split_jpg\\example\\images\\small_image.sjpg" ); 
+}
+
 
 ```
 # Converting .jpg to jpg c array
