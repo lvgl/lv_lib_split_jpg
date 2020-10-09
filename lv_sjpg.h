@@ -22,17 +22,6 @@ extern "C" {
 /*********************
  *      DEFINES
  *********************/
-//#define LV_SJPG_FREE(x)                 free(x)
-//#define LV_SJPG_MALLOC(x)               malloc(x)
-#define TJPGD_WORKBUFF_SIZE             4096    //Recommended by TJPGD libray
-
-//NEVER EDIT THESE OFFSET VALUES
-#define SJPEG_VERSION_OFFSET            8
-#define SJPEG_X_RES_OFFSET              14
-#define SJPEG_y_RES_OFFSET              16
-#define SJPEG_TOTAL_FRAMES_OFFSET       18
-#define SJPEG_BLOCK_WIDTH_OFFSET        20
-#define SJPEG_FRAME_INFO_ARRAY_OFFSET   22
 
 
 /**********************
