@@ -14,9 +14,8 @@ extern "C" {
  *      INCLUDES
  *********************/
 
-#include "stdint.h"
 #include <stdio.h>
-#include "lvgl.h"
+#include "lvgl/lvgl.h"
 #include "tjpgd.h"
 
 /*********************
