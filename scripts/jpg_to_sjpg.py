@@ -15,7 +15,7 @@ INPUT_FILE       = ""
 
 if len(sys.argv) == 2:
     INPUT_FILE = sys.argv[1]
-    OUTPUT_FILE_NAME = INPUT_FILE.split("/")[-1].split(".")[0]
+    OUTPUT_FILE_NAME = INPUT_FILE.split("/")[-1].split("\\")[-1].split(".")[0]
 else:
     print("usage:\n\t python " + sys.argv[0] + " input_file.jpg")
     sys.exit(0)
