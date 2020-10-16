@@ -51,6 +51,7 @@
 #include "lv_sjpg.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <lvgl/lvgl.h>
 
 /*********************
  *      DEFINES
@@ -259,8 +260,8 @@ static int img_data_cb( JDEC* jd, void* data, JRECT* rect )
     int x1 = rect->left, x2 = rect->right, y1 = rect->top, y2 = rect->bottom;
 
     for( int y = y1; y <= y2; y++ ) {
-        memcpy( ( cache + y * xres * 2 + x1 * 2), buf, ( x2 -x1 + 1 ) * 2 );
-        buf += ( x2 - x1 + 1 ) * 2;
+        memcpy( ( cache + y * xres * 3/*2*/ + x1 * 3/*2*/), buf, ( x2 -x1 + 1 ) * 3/*2*/ );
+        buf += ( x2 - x1 + 1 ) * 3/*2*/;
     }
 
 
@@ -365,7 +366,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                  sjpeg->frame_base_array[i] = sjpeg->frame_base_array[i-1] + offset;
             }
             sjpeg->sjpeg_cache_frame_index = -1;
-            sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 2 );
+            sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3/*2*/ );
             if( ! sjpeg->frame_cache ) {
                  lv_sjpg_cleanup( sjpeg );
                  sjpeg = NULL;
@@ -427,7 +428,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 sjpeg->frame_base_array[0] = img_frame_base;
 
                 sjpeg->sjpeg_cache_frame_index = -1;
-                sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 2 );
+                sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3 );
                 if( ! sjpeg->frame_cache ) {
                     lv_sjpg_cleanup( sjpeg );
                     sjpeg = NULL;
@@ -550,7 +551,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 }
 
                 sjpeg->sjpeg_cache_frame_index = -1; //INVALID AT BEGINNING for a forced compare mismatch at first time.
-                sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 2 );
+                sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3 );
                 if( ! sjpeg->frame_cache ) {
                     lv_fs_close(&lv_file);
                     lv_sjpg_cleanup(sjpeg);
@@ -637,7 +638,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 sjpeg->frame_base_offset[0] = img_frame_start_offset;
 
                 sjpeg->sjpeg_cache_frame_index = -1;
-                sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 2 );
+                sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3 );
                 if( ! sjpeg->frame_cache ) {
                     lv_fs_close(&lv_file);
                     lv_sjpg_cleanup(sjpeg);
@@ -713,7 +714,44 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
             sjpeg->sjpeg_cache_frame_index = sjpeg_req_frame_index;
         }
 
-        memcpy( buf, (uint8_t *)sjpeg->frame_cache + (x * 2) + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*2 , len*2 );
+        //memcpy( buf, (uint8_t *)sjpeg->frame_cache + (x * 3) + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*3/*2*/ , len*3/*2*/ );
+
+        int offset = 0;
+        uint8_t *cache = (uint8_t *)sjpeg->frame_cache + x*3 + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*3;
+
+        #if  LV_COLOR_DEPTH == 32
+
+        for( int i = 0; i < len; i++ ) {
+            buf[offset + 3] = 0xff;
+            buf[offset + 2] = *cache++;
+            buf[offset + 1] = *cache++;
+            buf[offset + 0] = *cache++;
+            offset += 4;
+        }
+
+        #elif  LV_COLOR_DEPTH == 16
+
+        for( int i = 0; i < len; i++ ) {
+            uint16_t col_16bit = (*cache++ & 0xf8) << 8;
+            col_16bit |= (*cache++ & 0xFC) << 3;
+            col_16bit |= (*cache++ >> 3);
+            buf[offset++] = col_16bit & 0xff;
+            buf[offset++] = col_16bit >> 8;
+        }
+
+        #elif  LV_COLOR_DEPTH == 8
+
+        for( int i = 0; i < len; i++ ) {
+            uint8_t col_8bit = (*cache++ & 0xC0);
+            col_8bit |= (*cache++ & 0xe0) >> 2;
+            col_8bit |= (*cache++ & 0xe0) >> 5;
+            buf[offset++] = col_8bit;
+        }
+        #else
+            #error Unsupported LV_COLOR_DEPTH
+
+
+        #endif // LV_COLOR_DEPTH
 
 
         return LV_RES_OK;
@@ -741,7 +779,46 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
             sjpeg->sjpeg_cache_frame_index = sjpeg_req_frame_index;
         }
 
-        memcpy( buf, (uint8_t *)sjpeg->frame_cache + (x * 2) + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*2 , len*2 );
+        //memcpy( buf, (uint8_t *)sjpeg->frame_cache + (x * 2) + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*2 , len*2 );
+        int offset = 0;
+        uint8_t *cache = (uint8_t *)sjpeg->frame_cache + x*3 + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*3;
+
+        #if LV_COLOR_DEPTH == 32
+        for( int i = 0; i < len; i++ ) {
+            buf[offset + 3] = 0xff;
+            buf[offset + 2] = *cache++;
+            buf[offset + 1] = *cache++;
+            buf[offset + 0] = *cache++;
+            offset += 4;
+        }
+
+        #elif  LV_COLOR_DEPTH == 16
+
+        for( int i = 0; i < len; i++ ) {
+            uint16_t col_8bit = (*cache++ & 0xf8) << 8;
+            col_8bit |= (*cache++ & 0xFC) << 3;
+            col_8bit |= (*cache++ >> 3);
+            buf[offset++] = col_8bit & 0xff;
+            buf[offset++] = col_8bit >> 8;
+
+        }
+
+        #elif  LV_COLOR_DEPTH == 8
+
+        for( int i = 0; i < len; i++ ) {
+            uint8_t col_8bit = (*cache++ & 0xC0);
+            col_8bit |= (*cache++ & 0xe0) >> 2;
+            col_8bit |= (*cache++ & 0xe0) >> 5;
+            buf[offset++] = col_8bit;
+        }
+
+        #else
+            #error Unsupported LV_COLOR_DEPTH
+
+
+        #endif // LV_COLOR_DEPTH
+
+
         return LV_RES_OK;
     }
 #endif // LV_USE_FS_IF
