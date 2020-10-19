@@ -170,7 +170,7 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
 
     }
   }
- #if LV_USE_FS_IF
+ #if LV_USE_FILESYSTEM
   else if( src_type == LV_IMG_SRC_FILE ) {
         const char * fn = src;
         if(!strcmp(&fn[strlen(fn) - 5], ".sjpg")) {
@@ -213,6 +213,9 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
 
         }
     } else if(!strcmp(&fn[strlen(fn) - 4], ".jpg")) {
+#if LV_USE_FILESYSTEM == 0
+        return LV_RES_INV;
+#else
             lv_fs_file_t file;
             lv_fs_res_t res = lv_fs_open(&file , fn, LV_FS_MODE_RD);
             if(res != LV_FS_RES_OK) return 78;
@@ -241,7 +244,7 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
                 header->h = jd_tmp.height;
                 return LV_RES_OK;
             }
-
+#endif
     }
 
   }
@@ -282,7 +285,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
         io->raw_sjpg_data += ndata;
         return ndata;
     }
- #if LV_USE_FS_IF
+ #if LV_USE_FILESYSTEM
 
     else if(io->type == SJPEG_IO_SOURCE_DISK) {
 
@@ -388,7 +391,9 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                  return LV_RES_INV;
             }
             sjpeg->io.type = SJPEG_IO_SOURCE_C_ARRAY;
+#if LV_USE_FILESYSTEM
             sjpeg->io.lv_file.file_d = NULL;
+#endif
             dsc->img_data = NULL;
             return lv_ret;
         }
@@ -452,7 +457,9 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 }
 
                 sjpeg->io.type = SJPEG_IO_SOURCE_C_ARRAY;
+#if LV_USE_FILESYSTEM
                 sjpeg->io.lv_file.file_d = NULL;
+#endif
                 dsc->img_data = NULL;
                 return lv_ret;
             } else {
@@ -469,7 +476,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
     }
 
-    #if  LV_USE_FS_IF
+#if  LV_USE_FILESYSTEM
 
     else if(dsc->src_type == LV_IMG_SRC_FILE) {
         /* If all fine, then the file will be kept open */
@@ -673,7 +680,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
             }
         }
     }
-    #endif // LV_USE_FS_IF
+#endif // LV_USE_FILESYSTEM
 
     return LV_RES_INV;
 }
@@ -757,7 +764,7 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
         return LV_RES_OK;
     }
 
-#if LV_USE_FS_IF
+#if LV_USE_FILESYSTEM
 
     else if(dsc->src_type == LV_IMG_SRC_FILE) {
         SJPEG* sjpeg = ( SJPEG* ) dsc->user_data;
@@ -846,9 +853,11 @@ static void decoder_close( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * ds
     switch(dsc->src_type) {
 
         case LV_IMG_SRC_FILE:
+#if LV_USE_FILESYSTEM
             if(sjpeg->io.lv_file.file_d) {
                 lv_fs_close(&(sjpeg->io.lv_file));
             }
+#endif
 			//no break
 
         case LV_IMG_SRC_VARIABLE:
