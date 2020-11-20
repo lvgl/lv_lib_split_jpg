@@ -6,7 +6,7 @@ LV_IMG_DECLARE( wallpaper_jpg );
 
 void demo_jpg_sjpg( void )
 {
-  lv_fs_if_init();
+//  lv_fs_if_init();
   lv_obj_t * img1;
   lv_obj_t * img2;
 

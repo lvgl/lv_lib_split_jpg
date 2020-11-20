@@ -180,25 +180,23 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
 
 
 
-            lv_fs_file_t file;
-            lv_fs_res_t res = lv_fs_open(&file , fn, LV_FS_MODE_RD);
-            if(res != LV_FS_RES_OK) return 78;
+            lv_fs_file_t * file;
+            file = lv_fs_open(fn, LV_FS_MODE_RD);
+            if(!file) return 78;
 
             uint32_t rn;
-            res = lv_fs_read(&file, buff, 8, &rn);
+            lv_fs_res_t res;
+            res = lv_fs_read(file, buff, 8, &rn);
             if(res != LV_FS_RES_OK || rn != 8) {
-                lv_fs_close(&file);
+                lv_fs_close(file);
                 return LV_RES_INV;
             }
 
             if(strcmp((char *)buff, "_SJPG__") == 0 ) {
-                lv_fs_seek(&file, 14);
-                //fseek(file, 14, SEEK_SET); //seek to res info ... refer sjpeg format
-//                int rn = fread(buff, 1, 4, file);
-
-                res = lv_fs_read(&file, buff, 4, &rn);
+                lv_fs_seek(file, 14, LV_FS_SEEK_SET);
+                res = lv_fs_read(file, buff, 4, &rn);
                 if(res != LV_FS_RES_OK || rn != 4 ) {
-                    lv_fs_close(&file);
+                    lv_fs_close(file);
                     return LV_RES_INV;
                 }
                 header->always_zero = 0;
@@ -208,7 +206,7 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
                 header->w |= *raw_sjpeg_data++ << 8;
                 header->h = *raw_sjpeg_data++;
                 header->h |= *raw_sjpeg_data++ << 8;
-                lv_fs_close(&file);
+                lv_fs_close(file);
                 return LV_RES_OK;
 
         }
@@ -216,13 +214,13 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
 #if LV_USE_FILESYSTEM == 0
         return LV_RES_INV;
 #else
-            lv_fs_file_t file;
-            lv_fs_res_t res = lv_fs_open(&file , fn, LV_FS_MODE_RD);
-            if(res != LV_FS_RES_OK) return 78;
+            lv_fs_file_t * file;
+            file = lv_fs_open(fn, LV_FS_MODE_RD);
+            if(!file) return 78;
 
             uint8_t *workb_temp = lv_mem_alloc( TJPGD_WORKBUFF_SIZE );
             if(!workb_temp) {
-                lv_fs_close(&file);
+                lv_fs_close(file);
                 return LV_RES_INV;
             }
 
@@ -235,7 +233,7 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
 
             JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (unsigned int)TJPGD_WORKBUFF_SIZE, &io_source_temp);
             lv_mem_free(workb_temp);
-            lv_fs_close(&file);
+            lv_fs_close(file);
 
             if(rc == JDR_OK ) {
                 header->always_zero = 0;
@@ -289,19 +287,16 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
     else if(io->type == SJPEG_IO_SOURCE_DISK) {
 
-        //FILE *file = io->file;
-        lv_fs_file_t* lv_file_p = &(io->lv_file);
+        lv_fs_file_t* lv_file_p = io->lv_file;
 
         if( buff ) {
-           // int rn =  fread( buff, 1, ndata, file );
-           //return rn;
             uint32_t rn = 0;
             lv_fs_read(lv_file_p, buff, ndata, &rn);
             return rn;
         } else {
             uint32_t pos;
             lv_fs_tell(lv_file_p, &pos);
-            lv_fs_seek(lv_file_p, ndata + pos);
+            lv_fs_seek(lv_file_p, ndata + pos, LV_FS_SEEK_SET);
             return ndata;
         }
     }
@@ -392,7 +387,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
             }
             sjpeg->io.type = SJPEG_IO_SOURCE_C_ARRAY;
 #if LV_USE_FILESYSTEM
-            sjpeg->io.lv_file.file_d = NULL;
+            sjpeg->io.lv_file = NULL;
 #endif
             dsc->img_data = NULL;
             return lv_ret;
@@ -458,7 +453,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
                 sjpeg->io.type = SJPEG_IO_SOURCE_C_ARRAY;
 #if LV_USE_FILESYSTEM
-                sjpeg->io.lv_file.file_d = NULL;
+                sjpeg->io.lv_file = NULL;
 #endif
                 dsc->img_data = NULL;
                 return lv_ret;
@@ -489,17 +484,18 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
             memset(buff, 0, sizeof(buff));
 
 
-            lv_fs_file_t lv_file;
-            lv_fs_res_t res = lv_fs_open(&lv_file , fn, LV_FS_MODE_RD);
-            if(res != LV_FS_RES_OK) {
+            lv_fs_file_t * lv_file;
+            lv_file = lv_fs_open(fn, LV_FS_MODE_RD);
+            if(!lv_file) {
                 return 78;
             }
 
 
             uint32_t rn;
-            res = lv_fs_read(&lv_file, buff, 22, &rn);
+            lv_fs_res_t res;
+            res = lv_fs_read(lv_file, buff, 22, &rn);
             if(res != LV_FS_RES_OK || rn != 22 ) {
-                lv_fs_close(&lv_file);
+                lv_fs_close(lv_file);
                 return LV_RES_INV;
             }
 
@@ -510,7 +506,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                     sjpeg = lv_mem_alloc(sizeof(SJPEG));
 
                     if( ! sjpeg ) {
-                        lv_fs_close(&lv_file);
+                        lv_fs_close(lv_file);
                         return LV_RES_INV;
                     }
                     memset(sjpeg, 0, sizeof(SJPEG));
@@ -536,7 +532,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 sjpeg->frame_base_array = NULL;//lv_mem_alloc( sizeof(uint8_t *) * sjpeg->sjpeg_total_frames );
                 sjpeg->frame_base_offset = lv_mem_alloc( sizeof(int) * sjpeg->sjpeg_total_frames );
                 if( ! sjpeg->frame_base_offset ) {
-                    lv_fs_close(&lv_file);
+                    lv_fs_close(lv_file);
                     lv_sjpg_cleanup(sjpeg);
                     return LV_RES_INV;
                 }
@@ -545,9 +541,10 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
                 for( int i = 1; i <  sjpeg->sjpeg_total_frames; i++ ) {
                     uint32_t rn;
-                    res = lv_fs_read(&lv_file, buff, 2, &rn);
+                    lv_fs_res_t res;
+                    res = lv_fs_read(lv_file, buff, 2, &rn);
                         if(res != LV_FS_RES_OK || rn != 2 ) {
-                        lv_fs_close(&lv_file);
+                        lv_fs_close(lv_file);
                         return LV_RES_INV;
                     }
 
@@ -560,7 +557,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 sjpeg->sjpeg_cache_frame_index = -1; //INVALID AT BEGINNING for a forced compare mismatch at first time.
                 sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3 );
                 if( ! sjpeg->frame_cache ) {
-                    lv_fs_close(&lv_file);
+                    lv_fs_close(lv_file);
                     lv_sjpg_cleanup(sjpeg);
                     return LV_RES_INV;
                 }
@@ -568,29 +565,29 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 sjpeg->io.img_cache_x_res = sjpeg->sjpeg_x_res;
                 sjpeg->workb =   lv_mem_alloc( TJPGD_WORKBUFF_SIZE );
                 if( ! sjpeg->workb ) {
-                    lv_fs_close(&lv_file);
+                    lv_fs_close(lv_file);
                     lv_sjpg_cleanup(sjpeg);
                     return LV_RES_INV;
                 }
 
                 sjpeg->tjpeg_jd =    lv_mem_alloc( sizeof( JDEC ) );
                 if( ! sjpeg->tjpeg_jd ) {
-                    lv_fs_close(&lv_file);
+                    lv_fs_close(lv_file);
                     lv_sjpg_cleanup(sjpeg);
                     return LV_RES_INV;
                 }
 
                 sjpeg->io.type = SJPEG_IO_SOURCE_DISK;
-                memcpy(&(sjpeg->io.lv_file), &lv_file, sizeof(lv_file));
+                sjpeg->io.lv_file = lv_file;
                 dsc->img_data = NULL;
                 return LV_RES_OK;
             }
         }
          else if( !strcmp(&fn[strlen(fn) - 4], ".jpg" ) ) {
 
-            lv_fs_file_t lv_file;
-            lv_fs_res_t res = lv_fs_open( &lv_file , fn, LV_FS_MODE_RD );
-            if(res != LV_FS_RES_OK) {
+            lv_fs_file_t * lv_file;
+            lv_file = lv_fs_open(fn, LV_FS_MODE_RD );
+            if(!lv_file) {
                 return LV_RES_INV;
             }
 
@@ -598,7 +595,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
             if(sjpeg == NULL) {
                 sjpeg = lv_mem_alloc( sizeof( SJPEG ) );
                 if( ! sjpeg ) {
-                    lv_fs_close( &lv_file );
+                    lv_fs_close(lv_file );
                     return LV_RES_INV;
                 }
 
@@ -609,7 +606,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
             uint8_t *workb_temp = lv_mem_alloc( TJPGD_WORKBUFF_SIZE );
                 if( ! workb_temp ) {
-                    lv_fs_close(&lv_file);
+                    lv_fs_close(lv_file);
                     lv_sjpg_cleanup(sjpeg);
                     return LV_RES_INV;
                 }
@@ -618,7 +615,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
             io_source_temp.type = SJPEG_IO_SOURCE_DISK;
             io_source_temp.file_seek_offset = 0;
             io_source_temp.img_cache_buff = NULL;
-            memcpy(&(io_source_temp.lv_file), &lv_file, sizeof(lv_file));
+            io_source_temp.lv_file = lv_file;
 
             JDEC jd_tmp;
 
@@ -636,7 +633,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 sjpeg->frame_base_array = NULL;
                 sjpeg->frame_base_offset =  lv_mem_alloc( sizeof(uint8_t *) * sjpeg->sjpeg_total_frames );
                 if( ! sjpeg->frame_base_offset ) {
-                    lv_fs_close(&lv_file);
+                    lv_fs_close(lv_file);
                     lv_sjpg_cleanup(sjpeg);
                     return LV_RES_INV;
                 }
@@ -647,7 +644,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 sjpeg->sjpeg_cache_frame_index = -1;
                 sjpeg->frame_cache = (void *)lv_mem_alloc( sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3 );
                 if( ! sjpeg->frame_cache ) {
-                    lv_fs_close(&lv_file);
+                    lv_fs_close(lv_file);
                     lv_sjpg_cleanup(sjpeg);
                     return LV_RES_INV;
                 }
@@ -656,14 +653,14 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 sjpeg->io.img_cache_x_res = sjpeg->sjpeg_x_res;
                 sjpeg->workb =   lv_mem_alloc( TJPGD_WORKBUFF_SIZE );
                 if( ! sjpeg->workb ) {
-                    lv_fs_close(&lv_file);
+                    lv_fs_close(lv_file);
                     lv_sjpg_cleanup(sjpeg);
                     return LV_RES_INV;
                 }
 
                 sjpeg->tjpeg_jd =   lv_mem_alloc( sizeof( JDEC ) );
                 if( ! sjpeg->tjpeg_jd ) {
-                    lv_fs_close(&lv_file);
+                    lv_fs_close(lv_file);
                     lv_sjpg_cleanup(sjpeg);
                     return LV_RES_INV;
                 }
@@ -675,7 +672,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
             } else {
                 if(dsc->user_data) lv_mem_free(dsc->user_data);
-                lv_fs_close(&lv_file);
+                lv_fs_close(lv_file);
                 return  LV_RES_INV;
             }
         }
@@ -771,14 +768,13 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
         JRESULT rc;
         int sjpeg_req_frame_index = y / sjpeg->sjpeg_single_frame_height;
 
-        lv_fs_file_t* lv_file_p = &(sjpeg->io.lv_file);
+        lv_fs_file_t* lv_file_p = sjpeg->io.lv_file;
         if(!lv_file_p) goto end;
 
         /*If line not from cache, refresh cache */
         if(sjpeg_req_frame_index != sjpeg->sjpeg_cache_frame_index) {
             sjpeg->io.file_seek_offset = (int)(sjpeg->frame_base_offset [ sjpeg_req_frame_index ]);
-            //fseek(sjpeg->io.file,  sjpeg->io.file_seek_offset , SEEK_SET);
-            lv_fs_seek( &(sjpeg->io.lv_file), sjpeg->io.file_seek_offset );
+            lv_fs_seek(lv_file_p, sjpeg->io.file_seek_offset, LV_FS_SEEK_SET);
             rc = jd_prepare( sjpeg->tjpeg_jd, input_func, sjpeg->workb, (unsigned int)TJPGD_WORKBUFF_SIZE, &(sjpeg->io));
             if(rc != JDR_OK ) return LV_RES_INV;
             rc = jd_decomp ( sjpeg->tjpeg_jd, img_data_cb, 0);
@@ -854,8 +850,8 @@ static void decoder_close( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * ds
 
         case LV_IMG_SRC_FILE:
 #if LV_USE_FILESYSTEM
-            if(sjpeg->io.lv_file.file_d) {
-                lv_fs_close(&(sjpeg->io.lv_file));
+            if(sjpeg->io.lv_file) {
+                lv_fs_close(sjpeg->io.lv_file);
             }
 #endif
 			//no break
