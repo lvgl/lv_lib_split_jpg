@@ -81,6 +81,7 @@ static void decoder_close( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * ds
 static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata );
 static int is_jpg( const uint8_t *raw_data );
 static void lv_sjpg_cleanup( SJPEG* sjpeg );
+static void lv_sjpg_free( SJPEG* sjpeg );
  /**********************
  *  STATIC VARIABLES
  **********************/
@@ -858,14 +859,11 @@ static void decoder_close( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * ds
                 lv_fs_close(&(sjpeg->io.lv_file));
             }
 #endif
-			//no break
+            lv_sjpg_free(sjpeg);
+            break;
 
         case LV_IMG_SRC_VARIABLE:
-            if(sjpeg->frame_cache) lv_mem_free(sjpeg->frame_cache);
-            if(sjpeg->frame_base_array) lv_mem_free(sjpeg->frame_base_array);
-            if(sjpeg->frame_base_offset) lv_mem_free(sjpeg->frame_base_offset);
-            if(sjpeg->tjpeg_jd) lv_mem_free(sjpeg->tjpeg_jd);
-            if(sjpeg->workb) lv_mem_free(sjpeg->workb);
+            lv_sjpg_free(sjpeg);
             break;
 
         default:
@@ -882,14 +880,19 @@ static int is_jpg( const uint8_t *raw_data )
     else return true;
 }
 
-static void lv_sjpg_cleanup( SJPEG* sjpeg )
+static void lv_sjpg_free( SJPEG* sjpeg )
 {
-    if(! sjpeg ) return;
-
     if(sjpeg->frame_cache) lv_mem_free(sjpeg->frame_cache);
     if(sjpeg->frame_base_array) lv_mem_free(sjpeg->frame_base_array);
     if(sjpeg->frame_base_offset) lv_mem_free(sjpeg->frame_base_offset);
     if(sjpeg->tjpeg_jd) lv_mem_free(sjpeg->tjpeg_jd);
     if(sjpeg->workb) lv_mem_free(sjpeg->workb);
+}
+
+static void lv_sjpg_cleanup( SJPEG* sjpeg )
+{
+    if(! sjpeg ) return;
+
+    lv_sjpg_free( sjpeg );
     lv_mem_free( sjpeg );
 }
