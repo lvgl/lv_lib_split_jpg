@@ -258,15 +258,17 @@ static int img_data_cb( JDEC* jd, void* data, JRECT* rect )
 {
     io_source_t *io = jd->device;
     uint8_t *cache = io->img_cache_buff;
-    int xres = io->img_cache_x_res;
+    const int xres = io->img_cache_x_res;
     uint8_t *buf = data;
-    int x1 = rect->left, x2 = rect->right, y1 = rect->top, y2 = rect->bottom;
+    const int INPUT_PIXEL_SIZE = 3;
+    const int row_width = rect->right - rect->left + 1; // Row width in pixels.
+    const int row_size = row_width * INPUT_PIXEL_SIZE;  // Row size (bytes).
 
-    for( int y = y1; y <= y2; y++ ) {
-        memcpy( ( cache + y * xres * 3/*2*/ + x1 * 3/*2*/), buf, ( x2 -x1 + 1 ) * 3/*2*/ );
-        buf += ( x2 - x1 + 1 ) * 3/*2*/;
+    for( int y = rect->top; y <= rect->bottom; y++ ) {
+        int row_offset = y * xres * INPUT_PIXEL_SIZE + rect->left * INPUT_PIXEL_SIZE;
+        memcpy( cache + row_offset, buf, row_size );
+        buf += row_size;
     }
-
 
     return 1;
 }
