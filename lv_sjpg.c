@@ -745,8 +745,13 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
             uint16_t col_16bit = (*cache++ & 0xf8) << 8;
             col_16bit |= (*cache++ & 0xFC) << 3;
             col_16bit |= (*cache++ >> 3);
+#ifdef LV_BIG_ENDIAN_SYSTEM
+            buf[offset++] = col_16bit >> 8;
+            buf[offset++] = col_16bit & 0xff;
+#else
             buf[offset++] = col_16bit & 0xff;
             buf[offset++] = col_16bit >> 8;
+#endif // LV_BIG_ENDIAN_SYSTEM
         }
 
         #elif  LV_COLOR_DEPTH == 8
@@ -808,9 +813,13 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
             uint16_t col_8bit = (*cache++ & 0xf8) << 8;
             col_8bit |= (*cache++ & 0xFC) << 3;
             col_8bit |= (*cache++ >> 3);
+#ifdef LV_BIG_ENDIAN_SYSTEM
+            buf[offset++] = col_8bit >> 8;
+            buf[offset++] = col_8bit & 0xff;
+#else
             buf[offset++] = col_8bit & 0xff;
             buf[offset++] = col_8bit >> 8;
-
+#endif // LV_BIG_ENDIAN_SYSTEM
         }
 
         #elif  LV_COLOR_DEPTH == 8
