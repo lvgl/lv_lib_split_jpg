@@ -1,0 +1,21 @@
+* text=auto
+
+# CRLF breaks shebang
+*.sh text eol=lf
+
+*.c text eol=crlf
+*.cc text eol=crlf
+*.h text eol=crlf
+*.py text eol=crlf
+*.md text eol=crlf
+*.mk text eol=crlf
+*.txt text eol=crlf
+.gitattributes text eol=crlf
+.gitignore text eol=crlf
+LICENSE text eol=crlf
+Makefile text eol=crlf
+
+# Known binary file types.
+*.png binary
+*.jpg binary
+*.sjpg binary
