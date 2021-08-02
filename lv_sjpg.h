@@ -38,9 +38,7 @@ enum io_source_type {
 
 typedef struct {
     enum io_source_type type;
-#if LV_USE_FILESYSTEM
     lv_fs_file_t lv_file;
-#endif
     uint8_t* img_cache_buff;
     int img_cache_x_res;
     int img_cache_y_res;
