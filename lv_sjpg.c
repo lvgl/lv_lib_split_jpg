@@ -41,8 +41,6 @@
 /	just replace those files with updated files.
 /---------------------------------------------------------------------------------------------------------------------------------*/
 
-
-
 /*********************
  *      INCLUDES
  *********************/
@@ -78,7 +76,6 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-
 static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_img_header_t * header );
 static lv_res_t decoder_open( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc );
 static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc, lv_coord_t x,lv_coord_t y, lv_coord_t len, uint8_t * buf );
@@ -87,6 +84,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata );
 static int is_jpg( const uint8_t *raw_data );
 static void lv_sjpg_cleanup( SJPEG* sjpeg );
 static void lv_sjpg_free( SJPEG* sjpeg );
+
  /**********************
  *  STATIC VARIABLES
  **********************/
@@ -107,8 +105,6 @@ void lv_split_jpeg_init( void )
     lv_img_decoder_set_read_line_cb( dec, decoder_read_line );
 }
 
-
-
 /**********************
  *   STATIC FUNCTIONS
  **********************/
@@ -119,7 +115,6 @@ void lv_split_jpeg_init( void )
  * @param header store the info here
  * @return LV_RES_OK: no error; LV_RES_INV: can't get the info
  */
-
 static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_img_header_t * header )
 {
   /*Check whether the type `src` is known by the decoder*/
@@ -199,9 +194,6 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
 
           if(strcmp((char *)buff, "_SJPG__") == 0 ) {
               lv_fs_seek(&file, 14, LV_FS_SEEK_SET);
-              //fseek(file, 14, SEEK_SET); //seek to res info ... refer sjpeg format
-              //                int rn = fread(buff, 1, 4, file);
-
               res = lv_fs_read(&file, buff, 4, &rn);
               if(res != LV_FS_RES_OK || rn != 4 ) {
                   lv_fs_close(&file);
@@ -252,8 +244,6 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
   return LV_RES_INV;
 }
 
-
-
 static int img_data_cb( JDEC* jd, void* data, JRECT* rect )
 {
     io_source_t *io = jd->device;
@@ -272,7 +262,6 @@ static int img_data_cb( JDEC* jd, void* data, JRECT* rect )
 
     return 1;
 }
-
 
 static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 {
@@ -293,12 +282,9 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
     }
     else if(io->type == SJPEG_IO_SOURCE_DISK) {
 
-        //FILE *file = io->file;
         lv_fs_file_t* lv_file_p = &(io->lv_file);
 
         if( buff ) {
-           // int rn =  fread( buff, 1, ndata, file );
-           //return rn;
             uint32_t rn = 0;
             lv_fs_read(lv_file_p, buff, ndata, &rn);
             return rn;
@@ -311,7 +297,6 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
     }
     return 0;
 }
-
 
 /**
  * Open SJPG image and return the decided image
@@ -472,9 +457,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 lv_mem_free(workb_temp);
 
             return lv_ret;
-
         }
-
     }
     else if(dsc->src_type == LV_IMG_SRC_FILE) {
         /* If all fine, then the file will be kept open */
@@ -684,9 +667,6 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
     return LV_RES_INV;
 }
 
-
-
-
 /**
  * Decode `len` pixels starting from the given `x`, `y` coordinates and store them in `buf`.
  * Required only if the "open" function can't open the whole decoded pixel array. (dsc->img_data == NULL)
@@ -701,11 +681,8 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
 static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc, lv_coord_t x, lv_coord_t y, lv_coord_t len, uint8_t * buf )
 {
-
     if(dsc->src_type == LV_IMG_SRC_VARIABLE) {
         SJPEG* sjpeg = ( SJPEG* ) dsc->user_data;
-
-
         JRESULT rc;
 
         int sjpeg_req_frame_index = y / sjpeg->sjpeg_single_frame_height;
@@ -729,13 +706,10 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
             sjpeg->sjpeg_cache_frame_index = sjpeg_req_frame_index;
         }
 
-        //memcpy( buf, (uint8_t *)sjpeg->frame_cache + (x * 3) + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*3/*2*/ , len*3/*2*/ );
-
         int offset = 0;
         uint8_t *cache = (uint8_t *)sjpeg->frame_cache + x*3 + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*3;
 
 #if  LV_COLOR_DEPTH == 32
-
         for( int i = 0; i < len; i++ ) {
             buf[offset + 3] = 0xff;
             buf[offset + 2] = *cache++;
@@ -772,8 +746,6 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
 
 
 #endif // LV_COLOR_DEPTH
-
-
         return LV_RES_OK;
     }
     else if(dsc->src_type == LV_IMG_SRC_FILE) {
@@ -787,20 +759,21 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
         /*If line not from cache, refresh cache */
         if(sjpeg_req_frame_index != sjpeg->sjpeg_cache_frame_index) {
             sjpeg->io.raw_sjpg_data_next_read_pos = (int)(sjpeg->frame_base_offset [ sjpeg_req_frame_index ]);
-            //fseek(sjpeg->io.file,  sjpeg->io.raw_sjpg_data_next_read_pos , SEEK_SET);
             lv_fs_seek( &(sjpeg->io.lv_file), sjpeg->io.raw_sjpg_data_next_read_pos, LV_FS_SEEK_SET);
+
             rc = jd_prepare( sjpeg->tjpeg_jd, input_func, sjpeg->workb, (unsigned int)TJPGD_WORKBUFF_SIZE, &(sjpeg->io));
             if(rc != JDR_OK ) return LV_RES_INV;
+
             rc = jd_decomp ( sjpeg->tjpeg_jd, img_data_cb, 0);
             if(rc != JDR_OK ) return LV_RES_INV;
+
             sjpeg->sjpeg_cache_frame_index = sjpeg_req_frame_index;
         }
 
-        //memcpy( buf, (uint8_t *)sjpeg->frame_cache + (x * 2) + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*2 , len*2 );
         int offset = 0;
         uint8_t *cache = (uint8_t *)sjpeg->frame_cache + x*3 + ( y % sjpeg->sjpeg_single_frame_height ) * sjpeg->sjpeg_x_res*3;
 
-        #if LV_COLOR_DEPTH == 32
+#if LV_COLOR_DEPTH == 32
         for( int i = 0; i < len; i++ ) {
             buf[offset + 3] = 0xff;
             buf[offset + 2] = *cache++;
@@ -808,8 +781,7 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
             buf[offset + 0] = *cache++;
             offset += 4;
         }
-
-        #elif  LV_COLOR_DEPTH == 16
+#elif  LV_COLOR_DEPTH == 16
 
         for( int i = 0; i < len; i++ ) {
             uint16_t col_8bit = (*cache++ & 0xf8) << 8;
@@ -839,18 +811,11 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
 
         #endif // LV_COLOR_DEPTH
 
-
         return LV_RES_OK;
     }
-
 end:
-
-return LV_RES_INV;
-
-
-
+    return LV_RES_INV;
 }
-
 
 /**
  * Free the allocated resources
@@ -864,7 +829,6 @@ static void decoder_close( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * ds
     if(!sjpeg) return;
 
     switch(dsc->src_type) {
-
         case LV_IMG_SRC_FILE:
             if(sjpeg->io.lv_file.file_d) {
                 lv_fs_close(&(sjpeg->io.lv_file));
@@ -880,7 +844,6 @@ static void decoder_close( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * ds
             ;
     }
 }
-
 
 static int is_jpg( const uint8_t *raw_data )
 {
