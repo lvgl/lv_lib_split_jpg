@@ -225,7 +225,7 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
           io_source_temp.type = SJPEG_IO_SOURCE_DISK;
           io_source_temp.raw_sjpg_data_next_read_pos = 0;
           io_source_temp.img_cache_buff = NULL;
-          memcpy(&(io_source_temp.lv_file), &file, sizeof(file));
+          io_source_temp.lv_file = file;
           JDEC jd_tmp;
 
           JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (unsigned int)TJPGD_WORKBUFF_SIZE, &io_source_temp);
@@ -563,7 +563,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 }
 
                 sjpeg->io.type = SJPEG_IO_SOURCE_DISK;
-                memcpy(&(sjpeg->io.lv_file), &lv_file, sizeof(lv_file));
+                sjpeg->io.lv_file = lv_file;
                 dsc->img_data = NULL;
                 return LV_RES_OK;
             }
@@ -601,7 +601,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
             io_source_temp.type = SJPEG_IO_SOURCE_DISK;
             io_source_temp.raw_sjpg_data_next_read_pos = 0;
             io_source_temp.img_cache_buff = NULL;
-            memcpy(&(io_source_temp.lv_file), &lv_file, sizeof(lv_file));
+            io_source_temp.lv_file = lv_file;
 
             JDEC jd_tmp;
 
@@ -652,7 +652,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
                 }
 
                 sjpeg->io.type = SJPEG_IO_SOURCE_DISK;
-                memcpy(&(sjpeg->io.lv_file), &lv_file, sizeof(lv_file));
+                sjpeg->io.lv_file = lv_file;
                 dsc->img_data = NULL;
                 return LV_RES_OK;
 
