@@ -42,6 +42,9 @@
 *.idb
 *.pdb
 
+# Editor temporary files
+*.swp
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd
