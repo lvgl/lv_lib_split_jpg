@@ -80,7 +80,7 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
 static lv_res_t decoder_open( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc );
 static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc, lv_coord_t x,lv_coord_t y, lv_coord_t len, uint8_t * buf );
 static void decoder_close( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc );
-static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata );
+static size_t input_func ( JDEC* jd, uint8_t* buff, size_t ndata );
 static int is_jpg( const uint8_t *raw_data );
 static void lv_sjpg_cleanup( SJPEG* sjpeg );
 static void lv_sjpg_free( SJPEG* sjpeg );
@@ -126,7 +126,7 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
 
   if(src_type == LV_IMG_SRC_VARIABLE) {
       uint8_t *raw_sjpeg_data = (uint8_t *)((lv_img_dsc_t * )src)->data;
-      const size_t raw_sjpeg_data_size = ((lv_img_dsc_t *)src)->data_size;
+      const uint32_t raw_sjpeg_data_size = ((lv_img_dsc_t *)src)->data_size;
 
       if(!strncmp((char *)raw_sjpeg_data, "_SJPG__", strlen("_SJPG__") )) {
 
@@ -157,7 +157,7 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
 
         JDEC jd_tmp;
 
-        JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (unsigned int)TJPGD_WORKBUFF_SIZE, &io_source_temp);
+        JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (size_t)TJPGD_WORKBUFF_SIZE, &io_source_temp);
         if(rc == JDR_OK ) {
             header->w = jd_tmp.width;
             header->h = jd_tmp.height;
@@ -228,7 +228,7 @@ static lv_res_t decoder_info( lv_img_decoder_t * decoder, const void * src, lv_i
           io_source_temp.lv_file = file;
           JDEC jd_tmp;
 
-          JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (unsigned int)TJPGD_WORKBUFF_SIZE, &io_source_temp);
+          JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (size_t)TJPGD_WORKBUFF_SIZE, &io_source_temp);
           lv_mem_free(workb_temp);
           lv_fs_close(&file);
 
@@ -263,7 +263,7 @@ static int img_data_cb( JDEC* jd, void* data, JRECT* rect )
     return 1;
 }
 
-static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
+static size_t input_func ( JDEC* jd, uint8_t* buff, size_t ndata )
 {
     io_source_t *io = jd->device;
 
@@ -271,7 +271,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
     if(io->type == SJPEG_IO_SOURCE_C_ARRAY) {
         const uint32_t bytes_left = io->raw_sjpg_data_size - io->raw_sjpg_data_next_read_pos;
-        const uint32_t to_read = ndata <= bytes_left ? ndata : bytes_left;
+        const uint32_t to_read = ndata <= bytes_left ? (uint32_t)ndata : bytes_left;
         if (to_read == 0)
             return 0;
         if(buff) {
@@ -286,12 +286,12 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
         if( buff ) {
             uint32_t rn = 0;
-            lv_fs_read(lv_file_p, buff, ndata, &rn);
+            lv_fs_read(lv_file_p, buff, (uint32_t)ndata, &rn);
             return rn;
         } else {
             uint32_t pos;
             lv_fs_tell(lv_file_p, &pos);
-            lv_fs_seek(lv_file_p, ndata + pos,  LV_FS_SEEK_SET);
+            lv_fs_seek(lv_file_p, (uint32_t)(ndata + pos),  LV_FS_SEEK_SET);
             return ndata;
         }
     }
@@ -399,7 +399,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
             io_source_temp.raw_sjpg_data_next_read_pos = 0;
 
             JDEC jd_tmp;
-            JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (unsigned int)TJPGD_WORKBUFF_SIZE, &io_source_temp);
+            JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (size_t)TJPGD_WORKBUFF_SIZE, &io_source_temp);
             lv_mem_free(workb_temp);
 
 
@@ -605,7 +605,7 @@ static unsigned int input_func ( JDEC* jd, uint8_t* buff, unsigned int ndata )
 
             JDEC jd_tmp;
 
-            JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (unsigned int)TJPGD_WORKBUFF_SIZE, &io_source_temp);
+            JRESULT rc = jd_prepare( &jd_tmp, input_func, workb_temp, (size_t)TJPGD_WORKBUFF_SIZE, &io_source_temp);
 
             lv_mem_free(workb_temp);
 
@@ -692,14 +692,14 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
             sjpeg->io.raw_sjpg_data = sjpeg->frame_base_array[ sjpeg_req_frame_index ];
             if (sjpeg_req_frame_index == (sjpeg->sjpeg_total_frames - 1)) {
                 /*This is the last frame. */
-                const uint32_t frame_offset = sjpeg->io.raw_sjpg_data - sjpeg->sjpeg_data;
+                const uint32_t frame_offset = (uint32_t)(sjpeg->io.raw_sjpg_data - sjpeg->sjpeg_data);
                 sjpeg->io.raw_sjpg_data_size = sjpeg->sjpeg_data_size - frame_offset;
             } else {
                 sjpeg->io.raw_sjpg_data_size =
-                    sjpeg->frame_base_array[sjpeg_req_frame_index + 1] - sjpeg->io.raw_sjpg_data;
+                    (uint32_t)(sjpeg->frame_base_array[sjpeg_req_frame_index + 1] - sjpeg->io.raw_sjpg_data);
             }
             sjpeg->io.raw_sjpg_data_next_read_pos = 0;
-            rc = jd_prepare( sjpeg->tjpeg_jd, input_func, sjpeg->workb, (unsigned int)TJPGD_WORKBUFF_SIZE, &(sjpeg->io));
+            rc = jd_prepare( sjpeg->tjpeg_jd, input_func, sjpeg->workb, (size_t)TJPGD_WORKBUFF_SIZE, &(sjpeg->io));
             if(rc != JDR_OK ) return LV_RES_INV;
             rc = jd_decomp ( sjpeg->tjpeg_jd, img_data_cb, 0);
             if(rc != JDR_OK ) return LV_RES_INV;
@@ -761,7 +761,7 @@ static lv_res_t decoder_read_line( lv_img_decoder_t * decoder, lv_img_decoder_ds
             sjpeg->io.raw_sjpg_data_next_read_pos = (int)(sjpeg->frame_base_offset [ sjpeg_req_frame_index ]);
             lv_fs_seek( &(sjpeg->io.lv_file), sjpeg->io.raw_sjpg_data_next_read_pos, LV_FS_SEEK_SET);
 
-            rc = jd_prepare( sjpeg->tjpeg_jd, input_func, sjpeg->workb, (unsigned int)TJPGD_WORKBUFF_SIZE, &(sjpeg->io));
+            rc = jd_prepare( sjpeg->tjpeg_jd, input_func, sjpeg->workb, (size_t)TJPGD_WORKBUFF_SIZE, &(sjpeg->io));
             if(rc != JDR_OK ) return LV_RES_INV;
 
             rc = jd_decomp ( sjpeg->tjpeg_jd, img_data_cb, 0);
