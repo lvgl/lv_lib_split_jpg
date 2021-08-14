@@ -42,6 +42,8 @@ void demo_jpg_sjpg( void )
   lv_img_set_src(img2, kTestFile);
 }
 
+#if defined(LV_LIB_SJPG_TEST)
+
 int main(int argc, const char **argv)
 {
   lv_init();
@@ -58,3 +60,6 @@ int main(int argc, const char **argv)
 
   demo_jpg_sjpg();
 }
+
+#endif  // defined(LV_LIB_SJPG_TEST)
+
