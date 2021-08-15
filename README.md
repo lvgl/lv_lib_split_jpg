@@ -1,5 +1,7 @@
 # JPG decoder for LVGL
 
+![Status](https://github.com/lvgl/lv_lib_split_jpg/actions/workflows/push_audit.yml/badge.svg)
+
 ## Overview
   - lv_lib_split_jpg supports both normal jpg and the custom sjpg formats.
   - Decoding normal jpg consumes RAM with the site fo the whole uncompressed image (recommended only for devices with more RAM)
@@ -21,11 +23,11 @@
 #if LV_USE_FS_IF
 #  define LV_FS_IF_FATFS    '\0'
 #  define LV_FS_IF_PC     'S'
-#endif  
+#endif
 ```
 - For fast simulatneous multi jpg/sjpg rendering in expense of additional RAM, you can modify `LV_IMG_CACHE_DEF_SIZE` to 2 or above if testing in simulator or using it in devices like raspberry pi etc.
 - To open large JPG image a lot of dymaic memory is required. Be sure to set `LV_MEM_SIZE` to large enough value. In simulator `(4 * 1024 * 1024)` shiuld be a good start.
- 
+
 ## Example code
 ```c
 #include <lvgl/lvgl.h>
@@ -49,23 +51,23 @@ void demo_jpg_sjpg( void )
 
   //sjpg from file (with lv_fs)
   //On Windows
-  lv_img_set_src(img2,  "S.\\lv_lib_split_jpg\\example\\images\\small_image.sjpg"); 
-  
+  lv_img_set_src(img2,  "S.\\lv_lib_split_jpg\\example\\images\\small_image.sjpg");
+
   //On Linux
-  //lv_img_set_src(img2,  "S/lv_lib_split_jpg/example/images/small_image.sjpg"); 
+  //lv_img_set_src(img2,  "S/lv_lib_split_jpg/example/images/small_image.sjpg");
 }
 ```
 ## Converter
 
 # Converting JPG to C array
-  - Use lvgl online tool https://lvgl.io/tools/imageconverter 
+  - Use lvgl online tool https://lvgl.io/tools/imageconverter
   - Color format = RAW, output format = C Array
-  
-# Converting JPG to SJPG  
+
+# Converting JPG to SJPG
  python3 and PIL library required
 
 To create SJPG from JPG:
-1. Drag and drop a jpeg image on top of the jpg_to_sjpg.py 
+1. Drag and drop a jpeg image on top of the jpg_to_sjpg.py
 2. Run the python script on shell with jpeg filename as argument. It should generate filename.c and filename.sjpg files.
 ```sh
 python3 jpg_to_sjpg.py wallpaper.jpg
