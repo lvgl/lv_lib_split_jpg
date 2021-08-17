@@ -76,7 +76,7 @@ target_sources(${PROJECT_NAME}
 )
 
 add_dependencies(${PROJECT_NAME} lvgl)
-add_definitions(-DLV_CONF_SKIP)
+add_definitions(-DLV_CONF_SKIP -DLV_LIB_SJPG_TEST)
 
 add_executable(demo_jpg_sjpg
   "example/demo_jpg_sjpg.c"
