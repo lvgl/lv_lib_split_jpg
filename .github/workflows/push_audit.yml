@@ -1,0 +1,83 @@
+name: Build
+on: push
+
+jobs:
+  textformat:
+    name: EditorConfig audit
+    runs-on: ubuntu-latest
+    env:
+      ALWAYS_LINT_ALL_FILES: false
+      EC_FIX_ERROR: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: EditorConfig-Action
+        uses: zbeekman/EditorConfig-Action@master
+        env:
+          ALWAYS_LINT_ALL_FILES: false
+          EC_FIX_ERROR: false
+
+  build:
+    name: Build-debug
+    runs-on: ubuntu-latest
+    env:
+      CMAKE_BUILD_DIR: ${{ github.workspace }}/build-asan/
+      CMAKE_BUILD_TYPE: Debug
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.9
+        with:
+          cmake-version: '3.16.x'
+      - name: Install dependencies and generate project files
+        run: |
+          cmake -S "${{ github.workspace }}" -B "${{ env.CMAKE_BUILD_DIR }}" -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DCONFIG_LV_CONF_SKIP=1
+      - name: Build
+        run: |
+          cmake --build "${{ env.CMAKE_BUILD_DIR }}"
+      - name: Show content of workspace at its completion
+        run: find $RUNNER_WORKSPACE
+        shell: bash
+      - name: Run debug tests
+        run: '${{ env.CMAKE_BUILD_DIR }}\demo_jpg_sjpg'
+
+  asan:
+    name: ${{ matrix.os }}-ASAN
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            triplet: x64-linux
+          - os: macos-latest
+            triplet: x64-osx
+    env:
+      CMAKE_BUILD_DIR: ${{ github.workspace }}/build-asan/
+      CMAKE_BUILD_TYPE: Debug
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.9
+        with:
+          cmake-version: '3.16.x'
+      - name: Install dependencies and generate project files
+        run: |
+          cmake -S "${{ github.workspace }}" -B "${{ env.CMAKE_BUILD_DIR }}" -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DSJPEG_ASAN=1 -DCONFIG_LV_CONF_SKIP=1
+      - name: Build
+        run: |
+          cmake --build "${{ env.CMAKE_BUILD_DIR }}"
+      - name: Show content of workspace at its completion
+        run: find $RUNNER_WORKSPACE
+        shell: bash
+      - name: Run ASAN tests
+        run: '${{ env.CMAKE_BUILD_DIR }}\demo_jpg_sjpg'
