@@ -22,13 +22,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      buildDir: '${{ github.workspace }}/build'
+      CMAKE_BUILD_DIR: ${{ github.workspace }}/build/
+      CMAKE_BUILD_TYPE: Debug
     steps:
     - name: Get source
       uses: actions/checkout@v2
       with:
         submodules: recursive
-    - name: Build
-      uses: lukka/run-cmake@v3
-      with:
-        buildDirectory: ${{ env.buildDir }}
+    - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.9
+        with:
+          cmake-version: '3.16.x'
+    - name: Install dependencies and generate project files
+        run: |
+          cmake -S "${{ github.workspace }}" -B "${{ env.CMAKE_BUILD_DIR }}"
+          -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DCONFIG_LV_CONF_SKIP=1
+      - name: Build
+        run: |
+          cmake --build "${{ env.CMAKE_BUILD_DIR }}"
