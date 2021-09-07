@@ -35,8 +35,7 @@ jobs:
         cmake-version: '3.16.x'
     - name: Install dependencies and generate project files
       run: |
-        cmake -S "${{ github.workspace }}" -B "${{ env.CMAKE_BUILD_DIR }}"
-        -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DCONFIG_LV_CONF_SKIP=1
+        cmake -S "${{ github.workspace }}" -B "${{ env.CMAKE_BUILD_DIR }}" -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DCONFIG_LV_CONF_SKIP=1
     - name: Build
       run: |
         cmake --build "${{ env.CMAKE_BUILD_DIR }}"
