@@ -1,5 +1,7 @@
 # JPG decoder for LVGL
 
+**This repository is merged into the lvgl repository. See https://docs.lvgl.io/master/libs/sjpg.html**
+
 ![Status](https://github.com/lvgl/lv_lib_split_jpg/actions/workflows/push_audit.yml/badge.svg)
 
 ## Overview
