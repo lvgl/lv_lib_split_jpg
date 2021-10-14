@@ -833,11 +833,11 @@ static void decoder_close( lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * ds
             if(sjpeg->io.lv_file.file_d) {
                 lv_fs_close(&(sjpeg->io.lv_file));
             }
-            lv_sjpg_free(sjpeg);
+            lv_sjpg_cleanup(sjpeg);
             break;
 
         case LV_IMG_SRC_VARIABLE:
-            lv_sjpg_free(sjpeg);
+            lv_sjpg_cleanup(sjpeg);
             break;
 
         default:
